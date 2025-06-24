@@ -1,0 +1,29 @@
+[.entrypoint]
+= !
+:source-highlighter: highlightjs
+:highlightjs-languages: bash
+:revealjs_theme: black
+:revealjs_progress: true
+:revealjs_history: true
+:customcss: ./styles/perso/stylesheets/style.css
+:revealjsdir: ./node_modules/reveal.js
+:revealjs_totalTime: 3000
+
+[.intro-block]
+image::cinema-front.jpg[width=50%]
+[NOTE.speaker]
+====
+* Merci d'assister à ma conférence
+====
+
+include::pages/start.adoc[leveloffset=+1]
+include::pages/context.adoc[leveloffset=+1]
+include::pages/training.adoc[leveloffset=+1]
+include::pages/action.adoc[leveloffset=+1]
+include::pages/road.adoc[leveloffset=+1]
+include::pages/check.adoc[leveloffset=+1]
+include::pages/256.adoc[leveloffset=+1]
+include::pages/511.adoc[leveloffset=+1]
+include::pages/end.adoc[leveloffset=+1]
+
+

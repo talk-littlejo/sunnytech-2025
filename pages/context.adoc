@@ -1,0 +1,228 @@
+= Contexte de la mission
+:imagesdir: assets/default/images
+
+image::mi-briefing.png[]
+//mi-fallout
+[NOTE.speaker]
+====
+Nous allons maintenant entrer dans le cœur de la mission.
+====
+
+== 511 clusters Kubernetes
+:imagesdir: assets/default
+
+video::511-clusters.mp4[opts="autoplay,loop,muted,nocontrols",role=center,width=60%]
+
+[NOTE.speaker]
+====
+Je pense que tout le monde connait ici Kubernetes: l'orchestrateur de containeurs.
+
+Notre objectif : en déployer 511.
+
+Combien de temps va durer ce déploiement ?
+
+* Pour un cluster: minimum 5 minutes
+* Séquentiel : 2 jours
+* Parallélisation
+
+🛠️ Outils : Infrastructure As Code: automatisation | fiabilité | changement du nombre de clusters rapide
+
+🪂 Mais on ne fonce pas tête baissée : y aller palier par palier
+
+====
+
+== Plugin CNI
+:imagesdir: assets/default/images
+image::cnis.png[]
+
+[NOTE.speaker]
+====
+Créer les clusters, c’est une chose. Mais les faire communiquer entre eux, c’est un tout autre niveau. Pour ça, on entre dans un autre domaine : la couche réseau de Kubernetes. Et c’est là qu’interviennent les plugins CNI.
+
+Objectif :
+
+* Donner le réseau aux cluster kubernetes
+* Établir une communication entre containers sur des serveurs distincts.
+
+Pas de plugin CNI par défaut
+
+Exemples :
+
+* 🐆 Calico: le plus utilisé historiquement
+* 🔁 Kube-router : minimaliste, BGP
+* 🧬 Cilium : eBPF
+====
+
+== Kube-Proxy
+image::kube-proxy.svg[]
+
+[NOTE.speaker]
+====
+Les plugins CNI donnent un réseau aux pods.
+
+Les pods sont éphémères. Leur adresse IP change. Or, les applications ont besoin d’un point d’entrée stable pour communiquer avec ces pods, peu importe où ils tournent.
+
+👉 C’est le rôle des Services : fournir une IP fixe vers un groupe de pods.
+
+Ce n’est pas kube-proxy qui route les paquets à proprement parler. Son rôle, c’est plutôt de programmer le noyau Linux à l’aide de iptables pour que le trafic soit redirigé vers les bons pods.
+
+On a maintenant parlé des principales briques réseau de Kubernetes. Parlons du plugin CNI que nous allons utiliser pour cette mission.
+====
+
+== Cilium
+
+👁️ Hubble
+
+🔐 CNP & chiffrement
+
+🧬 Service Mesh intégré
+
+🏎️ Suppression de kube-proxy
+
+image::cilium-paint-2.png[width=35%]
+
+[NOTE.speaker]
+====
+Cilium ce n'est pas seulement un plugin CNI qui permet de donner le réseau à Kubernetes, il a de nombreuses capacités :
+
+* 👁️ Observabilité : Hubble
+* 🔐 Sécurité : CNP & chiffrement
+* 🧬 Service Mesh intégré
+* 🏎️ Suppression de kube-proxy
+
+====
+
+== Cilium Cluster Mesh
+image::cilium-clustermesh.png[]
+
+[NOTE.speaker]
+====
+
+Nous avons parlé des fonctionnalités les plus utilisés.
+Mais pour cette mission en particulier, une autre fonctionnalité va jouer un rôle central.
+Celle qui va nous permettre de relier nos 511 clusters entre eux, comme s’ils ne faisaient qu’un :
+Cilium Cluster Mesh
+
+🚧 Conditions d’activation :
+
+* 🔀 Réseaux de pods disjoints
+* 🌍 Noeuds routables entre clusters
+* ⛔ Limite classique : 255 clusters
+* 🧪 Nouveauté 1.15 : 511 clusters possibles
+====
+
+== 2 clusters
+
+image::2-cluster-1.png[]
+[NOTE.speaker]
+====
+
+Mais avant d’orchestrer 511 clusters, commençons simple.
+
+Regardons comment fonctionne **Cilium Cluster Mesh** avec seulement **2 clusters**.
+
+Dans chaque cluster :
+
+* Un **control plane** et deux **nœuds workers**
+* Des agents **Cilium** tournent sur chaque nœud et gèrent le réseau
+
+Ce petit setup va nous permettre de comprendre les bases avant de passer à l’échelle.
+
+Il y a deux phases pour la création d'un cluster mesh.
+====
+
+== Activation
+
+image::2-cluster-2.svg[]
+
+[NOTE.speaker]
+====
+Phase 1 : activation.
+
+* pod cilium-clustermesh-api : une base de données etcd qui récupère les données utiles pour le cluster mesh
+* svc pointe sur le pod cilium-clustermesh-api
+
+* type de svc: Nodeport | loadbalancer | clusterip
+
+====
+
+== !
+
+image::2-cluster-3.svg[]
+
+[NOTE.speaker]
+====
+Phase 2 : connexion
+
+Les agents cilium sont configurés pour récupèrer les données de cilium-clustermesh-api de l'autre cluster.
+====
+
+== Relier 511 clusters
+
+:imagesdir: assets/default
+video::511-clusters-connected.mp4[opts="autoplay,loop,muted,nocontrols",role=center,width=60%]
+
+[NOTE.speaker]
+====
+On a vu comment relier 2 clusters.
+
+Mais maintenant... **changement d’échelle** : **511 clusters** à connecter entre eux.
+
+📈 Nombre total de communications à établir :
+
+* 🧮 511×510/2 = 130 305 liens
+* 🕒 Durée de création d’un lien : 15 secondes
+* Temps total estimé : ⏱️ 542 heures (22 jours)
+
+* Parallélisation ?
+====
+
+== Vérification de la communication
+:imagesdir: assets/default/images
+
+image::cilium-paint-3.png[width=35%]
+
+[NOTE.speaker]
+====
+Relier des clusters, c’est une chose.
+
+S’assurer qu’ils **peuvent réellement échanger des paquets**, c’en est une autre.
+
+C’est une étape souvent négligée.
+
+Mais pour cette mission, **elle est incontournable**.
+====
+
+== Déroulé des opérations
+
+💰 Budget serré
+
+🌫️ Solution Cloud
+
+[NOTE.speaker]
+====
+On a vu toutes les étapes techniques et les défis à venir.
+
+Maintenant, parlons du déroulé concret de la mission.
+
+Le budget est serré, impossible d’acheter 511 clusters Kubernetes.
+On va donc les **louer** dans le cloud.
+
+⏳ Le challenge ? Réaliser toute l’opération en **4 heures chrono**.
+====
+
+== Déroulé de chaque opération
+
+:imagesdir: assets/default/images
+
+image::32-clusters-deroule.apng[width=50%]
+
+[NOTE.speaker]
+====
+Comment va se dérouler chaque étape ?
+
+* Provisionner un grand nombre de clusters
+* Les connecter entre eux
+* Tester que la communication fonctionne
+* Tout va s'auto-détruire
+====

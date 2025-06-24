@@ -1,0 +1,126 @@
+= Présentation du terrain d'action
+:imagesdir: assets/default/images
+image::mi-action.png[]
+//mi-4
+[NOTE.speaker]
+====
+Maintenant que notre environnement d'entraînement est en place, Il est temps maintenant de **passer à l’action**.
+====
+
+== Choix stratégique : AWS EKS
+
+[NOTE.speaker]
+====
+🧭 Premier choix décisif : **le terrain d’opération**.  
+Nous avons besoin d’une plateforme capable d’encaisser 511 clusters sans flancher.
+
+🎯 Cible retenue : **AWS EKS**
+
+* ✅ maîtrise d'AWS et d'EKS
+* 🛡️ Confiance pour supporter 511 clusters
+====
+
+== Limites imposées par AWS
+
+image::service-quota.png[]
+
+[NOTE.speaker]
+====
+💥 Premier obstacle : les limites AWS
+
+AWS bloque à **100 clusters max**.
+
+🎩 Tentative : négociation.
+
+⏳ Après plusieurs semaines : refus pour 511.
+
+✅ Résultat obtenu : **256 clusters** autorisés.
+
+Mais pour les créer dans les temps, il va falloir ruser…
+====
+
+== Bonnes pratiques vs Réalité opérationnelle
+
+image::nodepool.apng[width=60%]
+
+[NOTE.speaker]
+====
+Prenons un exemple.
+
+📘 Selon les bonnes pratiques AWS, pour créer des workers EKS, il faut : créer des Node Pools, qui créent des ASG  qui créent des EC2.
+
+🚨 Sauf que tout ça prend un **temps fou**.
+
+🎯 On va créer **directement des EC2**, sans passer par les surcouches d'AWS.
+
+👉 Allez, regardons maintenant l’architecture retenue pour aller jusqu’à 256 clusters.
+====
+
+== Architecture retenue
+
+image::aws-archi.svg[width=50%]
+
+[NOTE.speaker]
+====
+On a un compte AWS, un VPC, un réseau privé. À l'intérieur il contient 4 sous-réseaux 2 publics 2 privés.
+
+Dans les sous-réseaux public il y a une NAT Gateway pour pouvoir télécharger les images des containers depuis les sous-réseaux privés.
+
+Dans les réseaux privé, il y a les clusters EKS avec une seule EC2 et un control plane.
+
+On avait évoqué le problème des connexions Cilium — il est temps de voir comment on l’a attaqué.
+====
+
+== Parallélisation des connexions
+
+image::connection-answer.apng[width=45%]
+[NOTE.speaker]
+====
+Je vous présente la première tentative pour paralléliser les connexions.
+
+La contrainte : pas de création des connexions d'un même cluster en parallèle
+
+Ainsi avec cet algorithme, avec 6 clusters kubernetes on a 5 étapes.
+
+On passe donc d'une complexité de O(n2) à O(n).
+
+On va maintenant pouvoir tester cette parallélisation sur 32 clusters Kubernetes.
+====
+
+== 32 clusters
+
+image::mission_failed.apng[width=50%]
+
+[NOTE.speaker]
+====
+Le test de 32 clusters a échoué
+
+❌ Mur technique détecté :
+
+* 📦 Trop d’objets Pulumi
+* n x n-1 / 2 objets pour créer les connexion
+* explosion de la RAM 💥
+
+Je vais réduire à 16 clusters
+====
+
+== 16 clusters
+
+image::16-clusters.apng[width=50%]
+
+[NOTE.speaker]
+====
+📉 Résultat :
+
+* ✅ 16 clusters connectés
+* ⏱️ 45 minutes…
+* 🚫 Bien trop long pour 511 clusters
+
+🔁 Connexions entre clusters → explosion du CPU
+
+* 1 connexion ≈ 1 CPU utilisé
+* 128 connexions = 128 CPUs ? 😅
+
+
+* Il faut une autre stratégie de connexion pour aller plus loin.
+====

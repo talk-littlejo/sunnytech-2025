@@ -1,0 +1,107 @@
+=  Vérification en conditions réelles
+:imagesdir: assets/default/images
+image::mi-check.png[]
+
+[NOTE.speaker]
+====
+On a résolu le problème de la création de connexion pour un nombre important de cluster.
+
+On commence à se rapprocher dangereusement de notre but.
+
+Il est temps de vérifier que les clusters sont bien fonctionnels et qu'ils peuvent bien communiquer.
+====
+
+== 🕵️ Surveillance passive
+
+[source,bash]
+----
+cilium status
+cilium clustermesh status
+----
+
+image::terminal-cilium-status.svg[]
+
+[NOTE.speaker]
+====
+Ainsi on a les lignes de commande cilium status et cilium clustermesh status qui permettent d'avoir l'état du cluster.
+
+* trop verbeux
+* 🚫 pas une **preuve de connectivité**
+====
+
+== 🧬 Analyse poussée
+
+[source,bash]
+----
+cilium status -o json
+cilium clustermesh status -o json
+----
+
+[NOTE.speaker]
+====
+Une réponse au premier problème, il est possible de changer la sortie standard d'avoir une sortie en json et ainsi :
+
+* 📊 Données plus exploitables
+* 🤖 Idéal pour un tableau de bord
+* 🚫 Toujours pas une **preuve de connectivité**
+====
+
+== Test de connectivité
+
+[source,bash]
+----
+cilium connectivity test --context cluster1 --multi-cluster cluster2
+----
+
+image::clustermesh-test.svg[width=80%]
+
+[NOTE.speaker]
+====
+Pour la connectivité il y a cilium connectivity test.
+
+* 🔍 Lance une **batterie de tests**
+
+* Le test ne vérifie que **1 ➜ 2**
+  * Pas de retour automatique **2 ➜ 1**
+====
+
+== Développement d’un outil de test
+
+* Modifier la cilium cli :
+
+[source,bash]
+----
+cilium connectivity test --context cluster1 --multi-cluster cluster[2-511]
+----
+
+* Utiliser **Terratest**
+
+[NOTE.speaker]
+====
+Deux options s'offrent à moi :
+
+* La solution naturelle : modifier la cilium cli
+* La solution astucieuse : Terratest
+====
+
+== Terratest
+
+image::clustermesh-terratest.svg[width=80%]
+
+[NOTE.speaker]
+====
+Terratest est un projet à l'origine pour tester du code Terraform
+La prise en main est facile mais il faut connaître le go. J'ai donc choisi cet outil.
+
+J'ai créé 5 tests différents.
+
+Par exemple celui-ci, il comporte :
+
+* client par cluster
+* serveur par cluster
+* le client requête jusqu'à ce qu'il ait réussi à joindre tous les clusters
+
+
+* Avec ce test, on peut vérifier si les clusters peuvent joindre tous les autres clusters.
+
+====

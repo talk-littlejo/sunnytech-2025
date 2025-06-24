@@ -1,0 +1,174 @@
+= 🚀 En route vers les 256 clusters
+:imagesdir: assets/default/images
+image::mi-plane.png[]
+[NOTE.speaker]
+====
+Maintenant qu'on a défini le terrain d'action et ses difficultés. Concentrons nous sur le problème principal pour aller jusqu'à 256 clusters.
+====
+
+== Création des connexions 🧨
+image::code-cilium-cli.png[width=80%]
+
+[NOTE.speaker]
+====
+Les connexions.
+
+Voici le code principal de la création de connexion.
+
+Nous allons expliquer comment fonctionne ce bout de code.
+====
+
+== !
+
+image::deploy-connection-get-1.svg[width=50%]
+
+[NOTE.speaker]
+====
+* 📡 Extraction des données de Cluster Mesh sur le cluster rouge.
+* C'est l'équivalent d'un kubectl get en langage Go
+* Cette étape dure moins d'une seconde
+====
+
+== !
+
+image::deploy-connection-get-2.svg[width=50%]
+[NOTE.speaker]
+====
+* Idem pour le cluster jaune
+====
+
+== !
+
+image::deploy-connection-upgrade-1.svg[width=40%]
+[NOTE.speaker]
+====
+* 🔧 Mise à jour de la config sur le cluster rouge avec les données du cluster jaune
+* C'est l'équivalent d'un helm upgrade en langage Go
+* Cette étape dure environ 7 secondes
+====
+
+== !
+
+image::deploy-connection-upgrade-2.svg[width=40%]
+[NOTE.speaker]
+====
+* Idem pour le cluster jaune
+
+🤔 "On peut paralléliser les helm upgrade, non ?"
+
+💥 Résultat : CPU en feu.
+====
+
+== Généralisation pour n clusters
+
+* 📡 Extraction des données (par cluster)
+* 🔧 Mise à jour de la config (par cluster)
+
+[NOTE.speaker]
+====
+Il faut plutôt généraliser la méthode pour n clusters que pour seulement 2 clusters :
+
+* On va récupérer les données de tous les clusters
+* On va mettre à jour le premier clusters avec les données des autres clusters
+* On va mettre à jour le deuxième clusters avec les données des autres clusters
+* Etc
+
+====
+
+== La Pull Request
+
+image::pr.png[]
+
+[NOTE.speaker]
+====
+C'est l'objectif de cette PR.
+
+En théorie : pour 511 clusters on mettrait environ une heure
+====
+
+== 🧪 **32 clusters**
+
+image::32-clusters.apng[width=50%]
+
+[NOTE.speaker]
+====
+Maintenant que la PR a été mergé, nous allons pouvoir tester cela sur un nombre important de clusters : 32.
+
+Nous voyons schématiquement la mise à jour de chaque cluster et de ses connexions.
+
+Le déploiement s'est bien passé mais en combien de temps ?
+====
+
+== !
+
+[cols="1,1", options="header"]
+|===
+| Étape | Durée
+
+| 🔧 *Création connexions*
+| 5 minutes
+
+| ⏳ *Déploiement total*
+| 17 minutes
+
+|===
+
+[NOTE.speaker]
+====
+Voici les résultats du déploiement.
+
+On met 5 minutes pour la création de connexion. Ce qui nous ferait environ 80 minutes pour 511 clusters probablement trop pour notre objectif de 4 heures.
+
+Les helm upgrade prennent beaucoup de temps. Pourquoi ne pas les paralléliser sans saturé le serveur.
+====
+
+== Parallélisation
+
+image::pr-2.png[]
+
+[NOTE.speaker]
+====
+C'est l'objet de cette PR.
+
+En suivant les durées observées avec 32 clusters : avec 16 tâches en parallèle on pourrait créer les connexions de 511 clusters en 5 minutes.
+====
+
+== 🧪 **64 clusters**
+
+image::64-clusters.apng[width=50%]
+
+[NOTE.speaker]
+====
+Maintenant que la PR est mergé, on va tester cela sur 64 clusters.
+
+Nous voyons schématiquement la mise à jour en parallèle de deux clusters et de ses connexions. Concernant le déploiement, on a parallélisé 7 fois la tâche des helm upgrades.
+
+Le déploiement s'est également bien passé avec 64 clusters.
+
+Voyons si cette optimisation va payer.
+====
+
+== !
+
+[cols="1,1,1", options="header"]
+|===
+| Clusters | Déploiement | Connexions
+
+| pass:[<span style="color:gray;">32</span>]
+| pass:[<span style="color:gray;">17 minutes</span>]
+| pass:[<span style="color:gray;">5 minutes</span>]
+
+| pass:[<strong><span style="color:#3366cc;">64</span></strong>]
+| pass:[<strong><span style="color:#3366cc;">15 minutes</span></strong>]
+| pass:[<strong><span style="color:#3366cc;">2 minutes</span></strong>]
+
+|===
+
+[NOTE.speaker]
+====
+Nous avont réussi à gagner 2 minutes sur le temps de déploiement de 64 clusters et 3 minutes sur le temps de création de connexion.
+
+Si la tendance continue, on pourrait connecter 511 clusters en seulement 16 minutes.
+
+👉 L’objectif des 4 heures semble être atteignable.
+====

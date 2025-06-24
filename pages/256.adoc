@@ -1,0 +1,113 @@
+=  Objectif 256 clusters
+image::mi-256.png[]
+//mi-3
+
+[NOTE.speaker]
+====
+On a un outil pour vérifier la connectivité des clusters. On va maintenant vérifier sur un grand nombre de clusters.
+====
+
+== Passage à 128 clusters
+
+:imagesdir: assets/default/images
+image::eks-128.png[]
+
+[NOTE.speaker]
+====
+Nous avons réussi à déployer 64 clusters. Passons maintenant à 128.
+====
+
+== !
+
+image::128-clusters.apng[width=70%]
+
+[NOTE.speaker]
+====
+J'ai doublé la parallélisation des helm upgrade, passant de 7 à 14 pour gagner encore plus de temps.
+
+🧪 **3 essais** avant de réussir à passer ce cap.
+
+* **Temps des tests** : **environ 1 heure** => c'est probablement trop pour 511 clusters.
+
+En parlons de temps regardons en combien de temps s'est déroulé le déploiement.
+====
+
+== !
+
+[cols="1,1,1", options="header"]
+|===
+| Clusters | Déploiement | Connexions
+
+| pass:[<span style="color:gray;">32</span>]
+| pass:[<span style="color:gray;">17 minutes</span>]
+| pass:[<span style="color:gray;">5 minutes</span>]
+
+| pass:[<span style="color:gray;">64</span>]
+| pass:[<span style="color:gray;">15 minutes</span>]
+| pass:[<span style="color:gray;">2 minutes</span>]
+
+| pass:[<strong><span style="color:#3366cc;">128</span></strong>]
+| pass:[<strong><span style="color:#3366cc;">19 minutes</span></strong>]
+| pass:[<strong><span style="color:#3366cc;">2 minutes 30</span></strong>]
+|===
+
+[NOTE.speaker]
+====
+Nous commençons à perdre du temps avec 128 clusters.
+
+Si la tendance continue, on pourrait connecter 511 clusters en seulement 10 minutes.
+====
+
+== 🧨 Le mur des 256
+
+image::eks-256.png[]
+[NOTE.speaker]
+====
+* Passons maintenant à 256 clusters.
+====
+
+== !
+
+image::256-clusters.apng[width=70%]
+
+[NOTE.speaker]
+====
+* **5 essais** ont été nécessaires pour atteindre le sommet
+
+* Déployer **256 clusters en simultané** ?
+  → **Mission impossible**
+* Déploiement 128 en simultanée
+
+* Au 3ème essai tout fonctionnait jusqu'à l'épreuve de la création des connexions.
+* Au moment de la création de connexion, ça a planté. Pourquoi parce que ça créait un secret qui avait une taille > 1 Mo
+* La résolution est un peu technique tout est détaillé sur le blog.
+====
+
+== !
+
+[cols="1,1,1", options="header"]
+|===
+| Clusters | Déploiement | Connexions
+
+| pass:[<span style="color:gray;">64</span>]
+| pass:[<span style="color:gray;">15 minutes</span>]
+| pass:[<span style="color:gray;">2 minutes</span>]
+
+| pass:[<span style="color:gray;">128</span>]
+| pass:[<span style="color:gray;">19 minutes</span>]
+| pass:[<span style="color:gray;">2 minutes 30</span>]
+
+| pass:[<strong><span style="color:#3366cc;">256</span></strong>]
+| pass:[<strong><span style="color:#3366cc;">40 minutes</span></strong>]
+| pass:[<strong><span style="color:#3366cc;">4 minutes 30</span></strong>]
+
+|===
+
+[NOTE.speaker]
+====
+Le temps de déploiement a doublé : logique on n'a pas pu déployer 256 clusters en parallèle.
+
+Au niveau des connexions, on a également perdu beaucoup de temps alors qu'on avait doublé le nombre de helm upgrade en parallèle.
+
+Si la tendance continue, on pourrait connecter 511 clusters en 9 minutes.
+====

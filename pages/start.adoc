@@ -1,0 +1,39 @@
+:imagesdir: assets/default/images
+
+= Identité
+
+image::mi-id.png[width=90%]
+//MI-1
+
+== !
+
+image::certifications.png[]
+
+[NOTE.speaker]
+====
+* Ingénieur cloud
+* Ambassadeur CNCF
+* Kubestronaute
+* Expert dans la technologie Cilium
+====
+
+== 🔍 Dossiers Classifiés 🔍
+
+* Blog tech dédié à eBPF et Cilium
+* Certification Cilium (CCA)
+* Provider Terraform pour déployer Cilium
+* Commits validés dans le repo officiel
+* Labs Champion
+
+[NOTE.speaker]
+====
+Mes principaux faits d'armes
+
+* Je tiens un blog consacré à Cilium
+* J'ai contribué à la certification Cilium
+* J'ai développé un provider terraform pour déployer Cilium
+
+Ma mission actuelle :
+
+* Créer 511 clusters Kubernetes et de les connecter avec Cilium
+====

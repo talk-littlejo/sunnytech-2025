@@ -1,0 +1,191 @@
+= 511 clusters
+:imagesdir: assets/default/images
+image::mi-511.png[]
+//mi-dead-reckoning
+[NOTE.speaker]
+====
+maintenant il reste un problème pour aller au delà de 256 clusters : aws
+====
+
+== Comment se détacher de la limite AWS ?
+
+[NOTE.speaker]
+====
+Comment aller au dela de cette limite.
+====
+
+== 2 comptes
+
+[NOTE.speaker]
+====
+Ma première idée était de déployer sur 2 comptes AWS différents.
+====
+
+== !
+
+image::511-2-accounts.svg[width=90%]
+
+[NOTE.speaker]
+====
+Nous dupliquons l'infra sur les deux comptes et nous les relions avec un VPC peering :
+
+* 256 clusters sur l'un
+* 255 clusters sur l'autre
+
+Cette solution m'a refroidi avec les soucis de déploiement que j'avais eu avec le déploiement de 256 clusters sur un seul compte.
+====
+
+== 7 comptes
+
+[NOTE.speaker]
+====
+J'ai ensuite pensé à le faire sur 7 comptes AWS différents :
+
+* 511 / 7 = 73 clusters par comptes
+====
+
+== !
+
+image::511-7-accounts.svg[width=55%]
+
+[NOTE.speaker]
+====
+De la même manière que pour 2 comptes, on va dupliquer l'infra sur les 7 comptes et on va les relier par une transit gateway.
+
+J'étais pas totalement satisfait de cette solution car il faut créer 7 comptes et il faudra penser à les supprimer et j'ai trouvé la dernière option était plus sympa.
+====
+
+== 7 régions
+image::aws-map.png[]
+[NOTE.speaker]
+====
+Nous allons créer un cluster mesh sur 7 régions AWS.
+====
+
+== !
+
+image::511-7-regions.svg[width=55%]
+[NOTE.speaker]
+====
+A priori l'architecture est similaire : on duplique l'architecture sur les différentes régions. Mais il faut créer une tgw par région et les connecter avec des tgw attachment.
+====
+
+== !
+
+image::511-7-regions-deployment.svg[width=80%]
+
+[NOTE.speaker]
+====
+On a maintenant choisi l'architecture. Mais comment déployer cela ?
+
+Créer un serveur de déploiement par région dont un serveur dédié à la connectivité : transit gateway et cilium cluster mesh
+====
+
+== 💰 Pricing 💰
+[NOTE.speaker]
+====
+Un dernier détail : combien ça coute tout ça ?
+====
+
+== !
+
+[cols="1,1,1,1", options="header"]
+|===
+| Ressource | horaire | Quantité | 4h
+
+| Cluster EKS | 0,10 $ | 511 | 204,40 $
+| t4g.medium  | 0,0336 $ | 511 | 68,77 $
+| c5a.2xlarge  | 0,3080 $ | 6 | 7,39 $
+| c5a.16xlarge  | 2,464 $ | 1 | 9,86 $
+
+|===
+
+[NOTE.speaker]
+====
+Au niveau des ressources compute, on a ...
+Les prix dépendent de la région où l'on déploie. Donc c'est probablement un peu plus
+====
+
+== !
+
+[cols="1,1,1,1", options="header"]
+|===
+| Ressource | horaire | Quantité | 4h
+
+| NAT Gw | 0,045 $ | 7 | 1,26 $
+| Transit Gw  | 0,10 $ | 7 | 2,80 $
+| Transit Gw Attachment  | 0,50 $ | 13 | 26,00 $
+| Total | | | 320,48 $
+|===
+
+[NOTE.speaker]
+====
+Au niveau des ressources réseaux, on a ...
+
+Ce qui nous fait un total de 320 $
+====
+
+== Coût 🕵️
+
+[cols="1,1,1,1", options="header"]
+|===
+| Ressource | Gb | Quantité | Estimation
+
+| NAT Gw | 0,045 $ | 511 | 22,995 $
+| Transit Gw  | 0,05 $ | 7 | 0,35 $
+|===
+[NOTE.speaker]
+====
+On n'oublie pas les frais de transfert. Par exemple ce qui coûte le plus cher là c'est le téléchargement des images des containers avec une Nat GW.
+====
+
+== tests de 2 clusters par région
+
+[NOTE.speaker]
+====
+Avant de déployer 511 clusters, j'ai commencé à déployer 2 clusters par région pour vérifier la connectivité intra région.
+
+Tout s'est bien passé : les tests également.
+====
+
+== Les premiers déploiements sur 511 clusters 🤞
+
+image::511-terminal.png[width=70%]
+
+[NOTE.speaker]
+====
+Je peux donc y aller avec confiance sur les 511 clusters !
+====
+
+== Les premiers déploiement sur 511 clusters 😩
+image::511-excel.png[width=70%]
+[NOTE.speaker]
+====
+Les premiers déploiements sont des échecs :
+
+* Problèmes de cidr
+
+Quelques points d'inquiétudes :
+
+* Le déploiement des clusters EKS entre chaque région est très variable : de 15 minutes à 45 minutes.
+* Erreur déploiement similaire à ceux que j'ai eu pour 128 et 256 clusters
+====
+
+== Dernier test
+
+[NOTE.speaker]
+====
+Tout s'est bien passé pour le dernier test...
+
+Sauf sur une région où un cluster n'est pas bien déployé.
+
+J'ai quand même testé sur les 6 autres régions :
+
+6x73 = 438 clusters ça aurait été déjà pas mal.
+
+La création des connexions a pris 1 h : le fait de créer les clusters sur différentes régions ralenti nous fait perdre énormément
+
+Malheureusement au moment des tests, il y avait des clusters qui n'étaient pas bien connectés.
+
+Cette dernière opération a coûté 156 $.
+====
