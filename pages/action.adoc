@@ -36,7 +36,7 @@ AWS bloque à **100 clusters max**.
 
 ✅ Résultat obtenu : **256 clusters** autorisés.
 
-Mais pour les créer dans les temps, il va falloir ruser…
+Par contre pour réussir à créer 256 clusters rapidement, il va falloir faire quelques entorses aux bonnes pratiques AWS…
 ====
 
 == Bonnes pratiques vs Réalité opérationnelle
@@ -53,7 +53,7 @@ Prenons un exemple.
 
 🎯 On va créer **directement des EC2**, sans passer par les surcouches d'AWS.
 
-👉 Allez, regardons maintenant l’architecture retenue pour aller jusqu’à 256 clusters.
+👉 Regardons maintenant l’architecture AWS retenue pour concilier rapidité et bonnes pratiques.
 ====
 
 == Architecture retenue
@@ -76,15 +76,15 @@ On avait évoqué le problème des connexions Cilium — il est temps de voir co
 image::connection-answer.apng[width=45%]
 [NOTE.speaker]
 ====
-Je vous présente la première tentative pour paralléliser les connexions.
+Je vous présente la première tentative pour paralléliser les connexions entre clusters.
 
-La contrainte : pas de création des connexions d'un même cluster en parallèle
+Contrainte : un cluster ne peut participer qu’à une seule connexion à la fois.
 
-Ainsi avec cet algorithme, avec 6 clusters kubernetes on a 5 étapes.
+Avec cet algorithme, pour 6 clusters Kubernetes, on passe de 15 étapes (toutes les connexions une par une) à seulement 5 étapes — une par round.
 
-On passe donc d'une complexité de O(n2) à O(n).
+Cet algorithme s’appelle un **tournoi toutes rondes**. C’est le même principe que dans une poule de foot, où chaque équipe affronte toutes les autres, une fois par journée.
 
-On va maintenant pouvoir tester cette parallélisation sur 32 clusters Kubernetes.
+On va maintenant tester cette parallélisation sur 32 clusters Kubernetes.
 ====
 
 == 32 clusters
@@ -98,7 +98,7 @@ Le test de 32 clusters a échoué
 ❌ Mur technique détecté :
 
 * 📦 Trop d’objets Pulumi
-* n x n-1 / 2 objets pour créer les connexion
+* n x n-1 / 2 objets pour créer les connexion => environ 500 objets Pulumi dédié aux connexions
 * explosion de la RAM 💥
 
 Je vais réduire à 16 clusters
