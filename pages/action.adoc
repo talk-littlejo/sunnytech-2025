@@ -68,7 +68,7 @@ Dans les sous-réseaux public il y a une NAT Gateway pour pouvoir télécharger 
 
 Dans les réseaux privé, il y a les clusters EKS avec une seule EC2 et un control plane.
 
-On avait évoqué le problème des connexions Cilium — il est temps de voir comment on l’a attaqué.
+Avant de faire des tests en grandeur nature, il est temps de voir comment on a attaqué le problème de la création des connexions Cilium pour gagner du temps de déploiement.
 ====
 
 == Parallélisation des connexions

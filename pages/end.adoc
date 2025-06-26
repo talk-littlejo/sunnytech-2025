@@ -12,3 +12,11 @@
 ++++
 
 image::qr-code.svg[width=20%]
+[NOTE.speaker]
+====
+Si vous voulez en savoir plus sur cette mission je vous conseille de lire mes articles de blog sur le sujet et de regarder la chaine Youtube dédiée.
+
+Je remercie l'organisation de cette événement d'avoir accepté cette conférence.
+
+Enfin, je remercie également mon tuteur qui m'a aidé pour sa création.
+====
